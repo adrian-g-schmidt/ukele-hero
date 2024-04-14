@@ -5,36 +5,45 @@
 #include <BleGamepad.h>
 
 BleGamepad bleGamepad("Ukele", "Adrian", 100);
-const int buttonPin1 = 15;
-const int buttonPin2 = 2;
-
+const int buttonPinCount = 7;
+const int buttonPins[] = {15, 2, 0, 4, 16, 17, 5};
+const int buttonValues[] = {BUTTON_1, BUTTON_2, BUTTON_3, BUTTON_4, BUTTON_5, BUTTON_6, BUTTON_7};
+const int lrPin = 36; // Left/Right
+const int udPin = 39; // Up/Down
 
 void setup()
 {
     Serial.begin(115200);
     Serial.println("Starting BLE work!");
     bleGamepad.begin();
-    pinMode(buttonPin1, INPUT_PULLUP);
-    pinMode(buttonPin2, INPUT_PULLUP);
-    // The default bleGamepad.begin() above enables 16 buttons, all axes, one hat, and no simulation controls or special buttons
+    for (int i = 0; i < buttonPinCount; i++) {
+        pinMode(buttonPins[i], INPUT_PULLUP);
+    }
+    pinMode(lrPin, INPUT);
+    pinMode(udPin, INPUT);
 }
 
 void loop()
 {
     if (bleGamepad.isConnected())
     {
-      //There is definitely a neater way to do this
-      if (digitalRead(buttonPin1)==LOW){
-        bleGamepad.press(BUTTON_6);
-      };
-      if (digitalRead(buttonPin1)==HIGH){
-        bleGamepad.release(BUTTON_6);
-      };
-      if (digitalRead(buttonPin2)==LOW){
-        bleGamepad.press(BUTTON_5);
-      };
-      if (digitalRead(buttonPin2)==HIGH){
-        bleGamepad.release(BUTTON_5);
-      };
+        for (int i = 0; i < buttonPinCount; i++) {
+            if (digitalRead(buttonPins[i]) == LOW) {
+                bleGamepad.press(buttonValues[i]);
+            } else {
+                bleGamepad.release(buttonValues[i]);
+            }
+        }
+        
+        // Read the analog values for the thumbstick
+        int lrValue = analogRead(lrPin);
+        int udValue = analogRead(udPin);
+        
+        // Map the analog values to the range [0, 32767]
+        int lrMapped = map(lrValue, 450, 3300, 0, 32767);
+        int udMapped = map(udValue, 450, 3300, 0, 32767);
+        
+        // Send the thumbstick values
+        bleGamepad.setLeftThumb(lrMapped, udMapped);
     }
 }
